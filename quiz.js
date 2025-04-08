@@ -110,10 +110,7 @@ function shuffleArray(array) {
     return array;
 }
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 3565c4153a0975c540fd34dc3cb47ad69ce858ee
 // Navigation Functions
 function createNavigation() {
     const navContainer = document.createElement("div");
@@ -159,8 +156,6 @@ function initializeTimer() {
             endQuiz();
         }
         totalTime--;
-<<<<<<< HEAD
-=======
     }
     timerInterval = setInterval(updateTimer, 1000);
 }
@@ -172,29 +167,8 @@ function updateQuestion() {
     
     // Get the image for this question from the randomized set
     document.getElementById("quiz-image").src = imageSet[currentQuestionIndex].path;
-    
-    // Reset slider to default value (3) for new questions
-    if (userConfidence[currentQuestionIndex] === null) {
-        document.getElementById("confidence-slider").value = 3;
-    } else {
-        document.getElementById("confidence-slider").value = userConfidence[currentQuestionIndex];
->>>>>>> 3565c4153a0975c540fd34dc3cb47ad69ce858ee
-    }
-    timerInterval = setInterval(updateTimer, 1000);
 }
 
-<<<<<<< HEAD
-// Question Handling
-function updateQuestion() {
-    setGradientBackground();
-    document.querySelector("h2").textContent = "Question " + (currentQuestionIndex + 1);
-    
-    // Get the image for this question from the randomized set
-    document.getElementById("quiz-image").src = imageSet[currentQuestionIndex].path;
-}
-
-=======
->>>>>>> 3565c4153a0975c540fd34dc3cb47ad69ce858ee
 function checkAnswer(isReal) {
     if (userAnswers[currentQuestionIndex] !== null) return;
     
@@ -342,7 +316,6 @@ function setupEventListeners() {
     document.getElementById("real-btn").addEventListener("click", () => checkAnswer(true));
     document.getElementById("fake-btn").addEventListener("click", () => checkAnswer(false));
     
-<<<<<<< HEAD
     document.getElementById("confident-btn").addEventListener("click", function() {
         userConfidence[currentQuestionIndex] = "Confident";
     });
@@ -351,10 +324,6 @@ function setupEventListeners() {
     });
     document.getElementById("not-confident-btn").addEventListener("click", function() {
         userConfidence[currentQuestionIndex] = "Not Confident";
-=======
-    document.getElementById("confidence-slider").addEventListener("input", function() {
-        userConfidence[currentQuestionIndex] = parseInt(this.value);
->>>>>>> 3565c4153a0975c540fd34dc3cb47ad69ce858ee
     });
 }
 
