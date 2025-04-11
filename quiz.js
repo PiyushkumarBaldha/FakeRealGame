@@ -23,6 +23,7 @@ let userAnswers = new Array(totalQuestions).fill(null);
 let userConfidence = new Array(totalQuestions).fill(null);
 let timerInterval;
 const quizStartTime = Date.now();
+let currentConfidence = null; // Track current confidence selection
 
 // This will store our randomized image paths and their correct answers
 let imageSet = [];
@@ -61,7 +62,31 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // Update first question
     updateQuestion();
+    
+    // Initialize player data in localStorage if not exists
+    initPlayerData();
 });
+
+// Initialize player data in localStorage
+function initPlayerData() {
+    if (!localStorage.getItem('playerData')) {
+        const playerData = {
+            playerId: generatePlayerId(),
+            scores: [],
+            sessions: [],
+            attempts: 0,
+            formData: {
+                age: localStorage.getItem("userAge") || null,
+                profession: localStorage.getItem("userProfession") || null
+            }
+        };
+        localStorage.setItem('playerData', JSON.stringify(playerData));
+    }
+}
+
+function generatePlayerId() {
+    return 'player_' + Math.random().toString(36).substr(2, 9);
+}
 
 // Initialize the randomized image set with complete shuffling
 function initializeImageSet() {
@@ -110,18 +135,14 @@ function shuffleArray(array) {
     return array;
 }
 
-
 // Navigation Functions
 function createNavigation() {
-    const navContainer = document.createElement("div");
-    navContainer.id = "question-nav";
-    document.body.insertBefore(navContainer, document.body.firstChild);
+    const navContainer = document.getElementById("question-nav");
 
     for (let i = 0; i < totalQuestions; i++) {
         let btn = document.createElement("button");
         btn.textContent = i + 1;
         btn.classList.add("nav-btn");
-        btn.style.backgroundColor = "yellow";
         btn.addEventListener("click", () => goToQuestion(i));
         navContainer.appendChild(btn);
     }
@@ -129,17 +150,13 @@ function createNavigation() {
 
 function goToQuestion(index) {
     currentQuestionIndex = index;
+    currentConfidence = userConfidence[index]; // Load confidence for this question
     updateQuestion();
 }
 
 // Timer Functions
 function initializeTimer() {
-    const timerElement = document.createElement("div");
-    timerElement.id = "timer";
-    timerElement.style.fontSize = "20px";
-    timerElement.style.fontWeight = "bold";
-    timerElement.style.marginTop = "10px";
-    document.getElementById("question-nav").parentNode.insertBefore(timerElement, document.getElementById("question-nav").nextSibling);
+    const timerElement = document.getElementById("timer");
 
     let totalTime = 600;
     function updateTimer() {
@@ -158,37 +175,75 @@ function initializeTimer() {
         totalTime--;
     }
     timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
 }
 
 // Question Handling
 function updateQuestion() {
     setGradientBackground();
-    document.querySelector("h2").textContent = "Question " + (currentQuestionIndex + 1);
-    
-    // Get the image for this question from the randomized set
+    document.getElementById("question-title").textContent = "Question " + (currentQuestionIndex + 1);
     document.getElementById("quiz-image").src = imageSet[currentQuestionIndex].path;
+    
+    // Update confidence button states
+    updateConfidenceButtons();
 }
 
 function checkAnswer(isReal) {
-    if (userAnswers[currentQuestionIndex] !== null) return;
+    const answer = isReal ? "Real" : "Fake";
+    userAnswers[currentQuestionIndex] = answer;
     
-    let userAnswer = isReal ? "Real" : "Fake";
-    userAnswers[currentQuestionIndex] = userAnswer;
-    
-    if (userAnswer === correctAnswers[currentQuestionIndex]) {
-        score += 10;
-    }
+    // Update score
+    score = 0;
+    userAnswers.forEach((ans, index) => {
+        if (ans === correctAnswers[index]) {
+            score += 10;
+        }
+    });
     
     updateScore();
     markAnswered(currentQuestionIndex);
     updateProgress();
+    
+    // Auto-proceed if confidence already selected
+    if (currentConfidence !== null) {
+        goToNextQuestion();
+    }
+}
 
+function setConfidence(confidence) {
+    currentConfidence = confidence;
+    userConfidence[currentQuestionIndex] = confidence;
+    
+    // Update button states
+    updateConfidenceButtons();
+    
+    // Auto-proceed if answer already selected
+    if (userAnswers[currentQuestionIndex] !== null) {
+        goToNextQuestion();
+    }
+}
+
+function updateConfidenceButtons() {
+    const buttons = document.querySelectorAll(".confidence-btn");
+    buttons.forEach(btn => btn.classList.remove("selected"));
+    
+    if (currentConfidence === "Confident") {
+        document.getElementById("confident-btn").classList.add("selected");
+    } else if (currentConfidence === "Not Sure") {
+        document.getElementById("not-sure-btn").classList.add("selected");
+    } else if (currentConfidence === "Not Confident") {
+        document.getElementById("not-confident-btn").classList.add("selected");
+    }
+}
+
+function goToNextQuestion() {
     let nextIndex = findNextUnanswered(currentQuestionIndex);
     if (nextIndex !== -1) {
         currentQuestionIndex = nextIndex;
+        currentConfidence = userConfidence[nextIndex]; // Load confidence for next question
         updateQuestion();
     } else {
-        endQuiz();
+        showReviewScreen();
     }
 }
 
@@ -196,7 +251,7 @@ function findNextUnanswered(current) {
     for (let i = current + 1; i < totalQuestions; i++) {
         if (userAnswers[i] === null) return i;
     }
-    for (let i = 0; i <= current; i++) {
+    for (let i = 0; i < current; i++) {
         if (userAnswers[i] === null) return i;
     }
     return -1;
@@ -205,10 +260,15 @@ function findNextUnanswered(current) {
 function markAnswered(index) {
     const navButtons = document.querySelectorAll(".nav-btn");
     const button = navButtons[index];
-    if (userAnswers[index] === correctAnswers[index]) {
-        button.style.backgroundColor = "green";
-    } else {
-        button.style.backgroundColor = "red";
+    
+    button.classList.remove("answered", "correct", "incorrect");
+    
+    if (userAnswers[index] !== null) {
+        if (userAnswers[index] === correctAnswers[index]) {
+            button.classList.add("correct");
+        } else {
+            button.classList.add("incorrect");
+        }
     }
 }
 
@@ -221,6 +281,84 @@ function updateProgress() {
 
 function updateScore() {
     document.getElementById("score").textContent = score;
+}
+
+// Review Functions
+function showReviewScreen() {
+    const quizContainer = document.querySelector(".quiz-container");
+    quizContainer.innerHTML = `
+        <div class="review-container">
+            <h2>Review Your Answers</h2>
+            <p>Check your answers before submitting. You can change any answer.</p>
+            
+            ${imageSet.map((img, index) => `
+                <div class="review-item">
+                    <h4>Question ${index + 1}</h4>
+                    <img class="review-image" src="${img.path}" alt="Question ${index + 1}">
+                    <div class="review-answer">
+                        Your answer: ${userAnswers[index] || "Not answered yet"}
+                        ${userAnswers[index] ? `(${userConfidence[index] || "No confidence level"})` : ''}
+                    </div>
+                    <div class="review-buttons">
+                        <button class="review-change-btn" onclick="changeAnswer(${index}, 'Real')">Change to Real</button>
+                        <button class="review-change-btn" onclick="changeAnswer(${index}, 'Fake')">Change to Fake</button>
+                    </div>
+                </div>
+            `).join('')}
+            
+            <div style="margin-top: 20px;">
+                <button class="confidence-btn" style="background-color: #4CAF50;" onclick="returnToQuiz()">Return to Quiz</button>
+                <button class="confidence-btn" style="background-color: #2196F3;" onclick="submitFinalAnswers()">Submit Final Answers</button>
+            </div>
+        </div>
+    `;
+}
+
+function changeAnswer(index, answer) {
+    userAnswers[index] = answer;
+    
+    // Update the answer display
+    const answerDisplay = document.querySelectorAll(".review-answer")[index];
+    answerDisplay.textContent = `Your answer: ${answer}`;
+    
+    // Update navigation button
+    const navButtons = document.querySelectorAll(".nav-btn");
+    if (navButtons.length > 0) {
+        navButtons[index].classList.remove("correct", "incorrect");
+        if (answer === correctAnswers[index]) {
+            navButtons[index].classList.add("correct");
+        } else {
+            navButtons[index].classList.add("incorrect");
+        }
+    }
+    
+    // Recalculate score
+    score = 0;
+    userAnswers.forEach((ans, i) => {
+        if (ans === correctAnswers[i]) {
+            score += 10;
+        }
+    });
+}
+
+function returnToQuiz() {
+    currentQuestionIndex = findNextUnanswered(0);
+    if (currentQuestionIndex === -1) currentQuestionIndex = 0;
+    currentConfidence = userConfidence[currentQuestionIndex];
+    updateQuestion();
+}
+
+function submitFinalAnswers() {
+    // Calculate final score
+    score = 0;
+    imageSet.forEach((img, index) => {
+        if (userAnswers[index] === correctAnswers[index]) {
+            score += 10;
+        }
+    });
+    
+    // End the quiz
+    endQuiz();
 }
 
 // End Quiz Functions
@@ -249,9 +387,12 @@ function endQuiz() {
         timeTaken: timeTaken,
         sessionId: sessionId,
         playNumber: playNumber,
-        imageSet: imageSet // Include the image set for reference
+        imageSet: imageSet
     };
 
+    // Store quiz data in localStorage
+    storeQuizData(quizData);
+    
     // Send data to Google Sheets
     sendDataToGoogleSheets(quizData);
 
@@ -269,25 +410,67 @@ function endQuiz() {
     `;
 }
 
-function getStarRating() {
-    return score >= 80 ? "⭐️⭐️⭐️" : score >= 50 ? "⭐️⭐️☆" : "⭐️☆☆";
+// Store quiz data in localStorage
+function storeQuizData(quizData) {
+    // Get existing player data
+    const playerData = JSON.parse(localStorage.getItem('playerData'));
+    
+    // Update player data with new quiz results
+    playerData.scores.push(quizData.score);
+    playerData.sessions.push({
+        sessionId: quizData.sessionId,
+        timestamp: quizData.timestamp,
+        score: quizData.score,
+        timeTaken: quizData.timeTaken
+    });
+    playerData.attempts = (playerData.attempts || 0) + 1;
+    
+    // Save updated player data
+    localStorage.setItem('playerData', JSON.stringify(playerData));
+    
+    // Also store the complete quiz data separately
+    localStorage.setItem('quizPerformance', JSON.stringify(quizData));
 }
 
-async function sendDataToGoogleSheets(quizData) {
-    try {
-        await fetch('https://script.google.com/macros/s/AKfycbyrL82R9ZRso-gR1UCiii5qk_wmP7sLnQzD3dfiFz8bhxd4JtALbi1vSb8kGfNzeixF/exec', {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(quizData),
-        });
+// Send data to Google Sheets
+function sendDataToGoogleSheets(quizData) {
+    // Prepare the data for Google Sheets
+    const sheetData = {
+        timestamp: quizData.timestamp,
+        playerId: JSON.parse(localStorage.getItem('playerData')).playerId,
+        age: quizData.age,
+        profession: quizData.profession,
+        score: quizData.score,
+        timeTaken: quizData.timeTaken,
+        sessionId: quizData.sessionId,
+        playNumber: quizData.playNumber,
+        answers: quizData.answers,
+        imageSet: quizData.imageSet
+    };
 
-        console.log('Timestamp sent to Google Sheets.');
-    } catch (error) {
-        console.error('Error sending timestamp:', error);
-    }
+
+    // This is where you would send the data to your Google Apps Script
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwBySXvfy3xKgoS0nOU5iS5_rvjFtODjpZIk4R1IpKVynoJLdnd2iAgsNyu1DCZk-8/exec';
+    
+    fetch(scriptUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sheetData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => console.log('Data sent successfully:', data))
+    .catch(error => console.error('Error sending data:', error));
+}
+
+function getStarRating() {
+    return score >= 80 ? "⭐️⭐️⭐️" : score >= 50 ? "⭐️⭐️☆" : "⭐️☆☆";
 }
 
 // Utility Functions
@@ -316,18 +499,13 @@ function setupEventListeners() {
     document.getElementById("real-btn").addEventListener("click", () => checkAnswer(true));
     document.getElementById("fake-btn").addEventListener("click", () => checkAnswer(false));
     
-    document.getElementById("confident-btn").addEventListener("click", function() {
-        userConfidence[currentQuestionIndex] = "Confident";
-    });
-    document.getElementById("not-sure-btn").addEventListener("click", function() {
-        userConfidence[currentQuestionIndex] = "Not Sure";
-    });
-    document.getElementById("not-confident-btn").addEventListener("click", function() {
-        userConfidence[currentQuestionIndex] = "Not Confident";
-    });
+    document.getElementById("confident-btn").addEventListener("click", () => setConfidence("Confident"));
+    document.getElementById("not-sure-btn").addEventListener("click", () => setConfidence("Not Sure"));
+    document.getElementById("not-confident-btn").addEventListener("click", () => setConfidence("Not Confident"));
+    
+    document.getElementById("review-btn").addEventListener("click", showReviewScreen);
 }
 
-// Navigation Functions
 function finishGame() {
     window.location.href = "photo-learning.html";
 }

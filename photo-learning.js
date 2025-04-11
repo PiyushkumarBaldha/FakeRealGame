@@ -1,15 +1,38 @@
 document.addEventListener('DOMContentLoaded', function() {
   // Display quiz results
-  const quizData = JSON.parse(localStorage.getItem('quizPerformance') || '{}');
-  
-  if (quizData.score !== undefined) {
-    const resultsDiv = document.getElementById('quiz-results');
-    resultsDiv.innerHTML = `
-      <h3>Your Quiz Results</h3>
-      <p>Score: ${quizData.score}/100</p>
-      <div class="stars">${getStarRating(quizData.score)}</div>
-      <p>Time Taken: ${Math.floor(quizData.timeTaken/60)}m ${quizData.timeTaken%60}s</p>
-    `;
+  try {
+      const quizData = JSON.parse(localStorage.getItem('quizPerformance')) || {};
+      
+      const resultsDiv = document.getElementById('quiz-results');
+      
+      if (quizData.score !== undefined) {
+          resultsDiv.innerHTML = `
+              <h3>Your Quiz Results</h3>
+              <p>Score: ${quizData.score}/100</p>
+              <div class="stars">${getStarRating(quizData.score)}</div>
+              <p>Time Taken: ${Math.floor(quizData.timeTaken/60)}m ${quizData.timeTaken%60}s</p>
+              <div class="end-container">
+                  <button class="end-btn" id="playagain-btn">Play Again</button>
+              </div>
+          `;
+          
+          // Add event listener to play again button
+          document.getElementById('playagain-btn').addEventListener('click', playAgain);
+      } else {
+          resultsDiv.innerHTML = `
+              <h3>No Quiz Results Found</h3>
+              <p>Complete the quiz to see your results here.</p>
+              <div class="end-container">
+                  <button class="end-btn" onclick="window.location.href='quiz.html'">Take Quiz</button>
+              </div>
+          `;
+      }
+  } catch (e) {
+      console.error("Error loading quiz results:", e);
+      document.getElementById('quiz-results').innerHTML = `
+          <h3>Error Loading Results</h3>
+          <p>There was an error loading your quiz results.</p>
+      `;
   }
   
   // Set a random learning image
@@ -18,13 +41,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Add event listeners to option cards
   document.querySelectorAll('.option-card').forEach(card => {
-    card.addEventListener('click', function() {
-      const topic = this.getAttribute('data-topic');
-      showInfo(topic);
-      
-      // Mark card as completed
-      this.classList.add('completed');
-    });
+      card.addEventListener('click', function() {
+          const topic = this.getAttribute('data-topic');
+          showInfo(topic);
+          
+          // Mark card as completed
+          this.classList.add('completed');
+      });
   });
 
   // Add event listener to back button
@@ -38,14 +61,14 @@ function getStarRating(score) {
 function showInfo(topic) {
   // Hide all info sections first
   document.querySelectorAll('.info-section').forEach(section => {
-    section.style.display = 'none';
+      section.style.display = 'none';
   });
   
   // Show the selected info section
   const infoSection = document.getElementById(`${topic}-info`);
   if (infoSection) {
-    infoSection.style.display = 'block';
-    infoSection.scrollIntoView({ behavior: 'smooth' });
+      infoSection.style.display = 'block';
+      infoSection.scrollIntoView({ behavior: 'smooth' });
   }
 }
 
@@ -53,17 +76,9 @@ function goBack() {
   window.location.href = 'afterQuiz.html';
 }
 
-// Add CSS styles for completed cards
-document.head.insertAdjacentHTML("beforeend", `
-  <style>
-    .completed {
-      background-color: #FFDAB9 !important; /* Light Orange */
-      border-color: #FF8C00 !important;
-      color: #8B4513 !important;
-      transition: background-color 0.5s ease-in-out;
-    }
-    .completed h3, .completed p {
-      color: #8B4513 !important;
-    }
-  </style>
-`);
+function playAgain() {
+  let attempt = parseInt(localStorage.getItem("attempt") || "1", 10);
+  attempt++;
+  localStorage.setItem("attempt", attempt);
+  window.location.href = "quiz.html";
+}
