@@ -3,19 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Form</title>
+    <title>Player Registration</title>
     <link rel="stylesheet" href="form-style.css">
 </head>
 <body>
-
     <div class="form-container">
         <h2>Enter Your Details</h2>
 
-        <label for="user-id">User ID (Number Only):</label>
-        <input type="text" id="user-id" placeholder="Enter User ID">
-
-        <label for="password">Password:</label>
-        <input type="password" id="password" placeholder="Enter Password">
+        <label for="player-id">Your Player ID:</label>
+        <input type="text" id="player-id" readonly>
 
         <label for="profession">Select Profession: <span class="required">*</span></label>
         <select id="profession" required>
@@ -39,6 +35,5 @@
     </div>
 
     <script src="form-validation.js"></script>
-
 </body>
 </html>
