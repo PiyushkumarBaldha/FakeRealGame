@@ -307,7 +307,6 @@ function showReviewScreen() {
             `).join('')}
             
             <div style="margin-top: 20px;">
-                <button class="confidence-btn" style="background-color: #4CAF50;" onclick="returnToQuiz()">Return to Quiz</button>
                 <button class="confidence-btn" style="background-color: #2196F3;" onclick="submitFinalAnswers()">Submit Final Answers</button>
             </div>
         </div>
@@ -339,13 +338,6 @@ function changeAnswer(index, answer) {
             score += 10;
         }
     });
-}
-
-function returnToQuiz() {
-    currentQuestionIndex = findNextUnanswered(0);
-    if (currentQuestionIndex === -1) currentQuestionIndex = 0;
-    currentConfidence = userConfidence[currentQuestionIndex];
-    updateQuestion();
 }
 
 function submitFinalAnswers() {
@@ -432,41 +424,44 @@ function storeQuizData(quizData) {
     localStorage.setItem('quizPerformance', JSON.stringify(quizData));
 }
 
-// Send data to Google Sheets
+// Send data to Google Sheets - Updated implementation
 function sendDataToGoogleSheets(quizData) {
-    // Prepare the data for Google Sheets
-    const sheetData = {
-        timestamp: quizData.timestamp,
-        playerId: JSON.parse(localStorage.getItem('playerData')).playerId,
-        age: quizData.age,
-        profession: quizData.profession,
-        score: quizData.score,
-        timeTaken: quizData.timeTaken,
-        sessionId: quizData.sessionId,
-        playNumber: quizData.playNumber,
-        answers: quizData.answers,
-        imageSet: quizData.imageSet
-    };
-
-
-    // This is where you would send the data to your Google Apps Script
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbwBySXvfy3xKgoS0nOU5iS5_rvjFtODjpZIk4R1IpKVynoJLdnd2iAgsNyu1DCZk-8/exec';
+    // Prepare the data in URL-encoded format
+    let formData = `timestamp=${encodeURIComponent(quizData.timestamp)}`;
+    formData += `&playerId=${encodeURIComponent(JSON.parse(localStorage.getItem('playerData')).playerId)}`;
+    formData += `&age=${encodeURIComponent(quizData.age)}`;
+    formData += `&profession=${encodeURIComponent(quizData.profession)}`;
+    formData += `&score=${quizData.score}`;
+    formData += `&timeTaken=${quizData.timeTaken}`;
+    formData += `&sessionId=${encodeURIComponent(quizData.sessionId)}`;
+    formData += `&playNumber=${quizData.playNumber}`;
     
-    fetch(scriptUrl, {
+    // Add answers data
+    for (let i = 0; i < totalQuestions; i++) {
+        if (quizData.answers[i]) {
+            formData += `&q${i+1}_answer=${encodeURIComponent(quizData.answers[i].answer)}`;
+            formData += `&q${i+1}_confidence=${encodeURIComponent(quizData.answers[i].confidence || '')}`;
+            formData += `&q${i+1}_correct=${quizData.answers[i].correct ? '1' : '0'}`;
+        }
+    }
+
+    // Use your form's script URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbysmeEcCVi6McEbrt8S25uXh3yXtDPhX9YMB1_TIiFukh4wp74Lmu0doGn0QWG37Z7rZA/exec';
+    
+    fetch(scriptURL, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify(sheetData)
+        body: formData
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
+    .then(response => response.json())
+    .then(data => {
+        console.log('Success:', data);
     })
-    .then(data => console.log('Data sent successfully:', data))
-    .catch(error => console.error('Error sending data:', error));
+    .catch(error => {
+        console.error('Error:', error);
+    });
 }
 
 function getStarRating() {
