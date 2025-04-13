@@ -261,15 +261,9 @@ function markAnswered(index) {
     const navButtons = document.querySelectorAll(".nav-btn");
     const button = navButtons[index];
     
-    button.classList.remove("answered", "correct", "incorrect");
-    
-    if (userAnswers[index] !== null) {
-        if (userAnswers[index] === correctAnswers[index]) {
-            button.classList.add("correct");
-        } else {
-            button.classList.add("incorrect");
-        }
-    }
+    // Remove all classes and just add 'answered' to turn it blue
+    button.classList.remove("correct", "incorrect");
+    button.classList.add("answered");
 }
 
 function updateProgress() {
@@ -320,15 +314,11 @@ function changeAnswer(index, answer) {
     const answerDisplay = document.querySelectorAll(".review-answer")[index];
     answerDisplay.textContent = `Your answer: ${answer}`;
     
-    // Update navigation button
+    // Update navigation button (just make it blue)
     const navButtons = document.querySelectorAll(".nav-btn");
     if (navButtons.length > 0) {
         navButtons[index].classList.remove("correct", "incorrect");
-        if (answer === correctAnswers[index]) {
-            navButtons[index].classList.add("correct");
-        } else {
-            navButtons[index].classList.add("incorrect");
-        }
+        navButtons[index].classList.add("answered");
     }
     
     // Recalculate score

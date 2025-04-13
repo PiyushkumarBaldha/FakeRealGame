@@ -9,7 +9,7 @@ body {
     padding: 20px;
     transition: background-color 0.5s ease;
     flex-direction: column;
-    overflow-y: auto; /* Make entire page scrollable */
+    overflow-y: auto;
 }
 
 /* Navigation */
@@ -47,25 +47,29 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     min-width: 30px;
+    transform: perspective(1px) translateZ(0);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.nav-btn:not(.answered) {
+    animation: pulse 2s infinite;
 }
 
 .nav-btn.answered {
     background-color: #2196F3;
     color: white;
-}
-
-.nav-btn.correct {
-    background-color: #4CAF50;
-    color: white;
-}
-
-.nav-btn.incorrect {
-    background-color: #F44336;
-    color: white;
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.7);
 }
 
 .nav-btn:hover {
-    transform: scale(1.1);
+    transform: scale(1.1) perspective(1px) translateZ(0);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
 
 /* Quiz Container */
@@ -81,7 +85,7 @@ body {
     transition: background 0.5s ease;
     animation: fadeIn 1s ease-in-out;
     margin: 20px auto;
-    overflow: visible; /* Ensure container doesn't scroll */
+    overflow: visible;
 }
 
 #question-title {
@@ -103,27 +107,62 @@ body {
     border-radius: 10px;
     margin: 10px 0;
     transition: all 0.3s ease;
+    border: 3px solid white;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+#quiz-image:hover {
+    transform: scale(1.01);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* Progress Bar */
 #progress-bar {
     width: 100%;
     background-color: #e0e0e0;
-    height: 20px;
-    border-radius: 10px;
+    height: 25px;
+    border-radius: 12px;
     margin-top: 15px;
     box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
 }
 
 #progress-bar-filled {
     height: 100%;
-    background-color: #4caf50;
+    background: linear-gradient(90deg, #2196F3, #64B5F6);
     border-radius: 10px;
     width: 0%;
     text-align: center;
     color: white;
-    line-height: 20px;
-    transition: width 0.5s ease-in-out;
+    line-height: 25px;
+    transition: width 0.5s ease-in-out, background-color 0.3s ease;
+    position: relative;
+}
+
+#progress-bar-filled:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.15) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.15) 50%,
+        rgba(255, 255, 255, 0.15) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 20px 20px;
+    animation: progress-stripes 1s linear infinite;
+}
+
+@keyframes progress-stripes {
+    from { background-position: 0 0; }
+    to { background-position: 20px 0; }
 }
 
 /* Answer Buttons */
