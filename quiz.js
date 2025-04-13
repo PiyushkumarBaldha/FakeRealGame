@@ -414,24 +414,26 @@ function storeQuizData(quizData) {
     localStorage.setItem('quizPerformance', JSON.stringify(quizData));
 }
 
-// Send data to Google Sheets - Updated implementation
+// Send data to Google Sheets
 function sendDataToGoogleSheets(quizData) {
     // Prepare the data in URL-encoded format
     let formData = `timestamp=${encodeURIComponent(quizData.timestamp)}`;
     formData += `&playerId=${encodeURIComponent(JSON.parse(localStorage.getItem('playerData')).playerId)}`;
+    formData += `&sessionId=${encodeURIComponent(quizData.sessionId)}`;
+    formData += `&playNumber=${quizData.playNumber}`;
     formData += `&age=${encodeURIComponent(quizData.age)}`;
     formData += `&profession=${encodeURIComponent(quizData.profession)}`;
     formData += `&score=${quizData.score}`;
     formData += `&timeTaken=${quizData.timeTaken}`;
-    formData += `&sessionId=${encodeURIComponent(quizData.sessionId)}`;
-    formData += `&playNumber=${quizData.playNumber}`;
+    formData += `&imageSet=${encodeURIComponent(JSON.stringify(quizData.imageSet))}`;
     
-    // Add answers data
+    // Add answers data for each question
     for (let i = 0; i < totalQuestions; i++) {
         if (quizData.answers[i]) {
             formData += `&q${i+1}_answer=${encodeURIComponent(quizData.answers[i].answer)}`;
             formData += `&q${i+1}_confidence=${encodeURIComponent(quizData.answers[i].confidence || '')}`;
             formData += `&q${i+1}_correct=${quizData.answers[i].correct ? '1' : '0'}`;
+            formData += `&q${i+1}_image=${encodeURIComponent(quizData.answers[i].imagePath)}`;
         }
     }
 
@@ -501,3 +503,9 @@ function playAgain() {
     localStorage.setItem("attempt", attempt);
     window.location.reload();
 }
+
+// Make functions available in global scope for HTML onclick handlers
+window.changeAnswer = changeAnswer;
+window.submitFinalAnswers = submitFinalAnswers;
+window.finishGame = finishGame;
+window.playAgain = playAgain;
