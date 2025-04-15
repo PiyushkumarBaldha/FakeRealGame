@@ -414,37 +414,35 @@ function storeQuizData(quizData) {
     localStorage.setItem('quizPerformance', JSON.stringify(quizData));
 }
 
-// Send data to Google Sheets
+// Add this function to your quiz.js file
 function sendDataToGoogleSheets(quizData) {
-    // Prepare the data in URL-encoded format
-    let formData = `timestamp=${encodeURIComponent(quizData.timestamp)}`;
-    formData += `&playerId=${encodeURIComponent(JSON.parse(localStorage.getItem('playerData')).playerId)}`;
-    formData += `&sessionId=${encodeURIComponent(quizData.sessionId)}`;
-    formData += `&playNumber=${quizData.playNumber}`;
-    formData += `&age=${encodeURIComponent(quizData.age)}`;
-    formData += `&profession=${encodeURIComponent(quizData.profession)}`;
-    formData += `&score=${quizData.score}`;
-    formData += `&timeTaken=${quizData.timeTaken}`;
-    formData += `&imageSet=${encodeURIComponent(JSON.stringify(quizData.imageSet))}`;
+    // Prepare the data for submission
+    const formData = new URLSearchParams();
     
-    // Add answers data for each question
+    // Add basic info
+    formData.append('timestamp', quizData.timestamp);
+    formData.append('sessionId', quizData.sessionId);
+    formData.append('playNumber', quizData.playNumber);
+    formData.append('age', quizData.age);
+    formData.append('profession', quizData.profession);
+    formData.append('score', quizData.score);
+    formData.append('timeTaken', quizData.timeTaken);
+    
+    // Add answers and confidence levels
     for (let i = 0; i < totalQuestions; i++) {
-        if (quizData.answers[i]) {
-            formData += `&q${i+1}_answer=${encodeURIComponent(quizData.answers[i].answer)}`;
-            formData += `&q${i+1}_confidence=${encodeURIComponent(quizData.answers[i].confidence || '')}`;
-            formData += `&q${i+1}_correct=${quizData.answers[i].correct ? '1' : '0'}`;
-            formData += `&q${i+1}_image=${encodeURIComponent(quizData.answers[i].imagePath)}`;
-        }
+        formData.append(`q${i+1}_image`, quizData.imageSet[i].path);
+        formData.append(`q${i+1}_answer`, userAnswers[i] || '');
+        formData.append(`q${i+1}_confidence`, userConfidence[i] || '');
+        formData.append(`q${i+1}_correct`, (userAnswers[i] === correctAnswers[i]) ? '1' : '0');
     }
-
-    // Use your form's script URL
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbysmeEcCVi6McEbrt8S25uXh3yXtDPhX9YMB1_TIiFukh4wp74Lmu0doGn0QWG37Z7rZA/exec';
     
-    fetch(scriptURL, {
+    // Get player ID from localStorage
+    const playerData = JSON.parse(localStorage.getItem('playerData') || '{}');
+    formData.append('playerId', playerData.playerId || generatePlayerId());
+    
+    // Send data to Google Sheets
+    fetch('https://script.google.com/macros/s/AKfycbwFPNCvyHT84BpuKJiwbItYG2EtmirSGt9RwsCxBlRhhsKIV93GJbkPG4gfAJ6_lh4h/exec', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
         body: formData
     })
     .then(response => response.json())
